@@ -1,0 +1,42 @@
+version: '3.1'
+
+services:
+  # MySQL service
+  mysql:
+    container_name: pp_interview_mysql
+    image: mysql:8.0.31
+    command:
+      --skip-log-bin
+      --max_allowed_packet=500M
+      --max_connections=1000
+      --character-set-server=utf8mb3
+      --collation-server=utf8mb3_general_ci
+      --innodb_redo_log_capacity=700M
+      --innodb_buffer_pool_size=4G
+      --innodb_log_buffer_size=256M
+      --innodb_log_file_size=1G
+      --innodb_write_io_threads=16
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+      MYSQL_DATABASE: pp_interview_db
+    healthcheck:
+      test: ["CMD", "mysqladmin", "-uroot", "-padmin", "ping", "-h", "localhost"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    ports:
+      - "3306:3306"  # Expose MySQL port
+
+  # Django service
+  web:
+    container_name: pp_interview_django
+    image: python:3.9 
+    command: >
+      sh -c "sudo pip install mysqlclient && sudo pip install django && sudo python /pp_interview_project/manage.py migrate && sudo python /pp_interview_project/manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - /home/hiren/Documents/parlament/Work/pp_interview_project:/app  # Mount the Django project directory to the container
+    ports:
+      - "8000:8000"  # Expose Django server port
+    depends_on:
+      - mysql  # Ensure the MySQL container starts first
